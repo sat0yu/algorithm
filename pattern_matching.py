@@ -21,9 +21,10 @@ def Naive(T, W):
 def KnuthMorrisPratt(T, W):
     pos = []
     # create table
-    P = [-1,]
-    for i in range(1,len(W)):
-        suffix_set = [ W[i-j:i] for j in range(1,i) ]
+    P = [-1,0]
+    for i in range(2,len(W)):
+        suffix_set = [ W[i-j:i] for j in range(1,2+P[i-1]) ]
+        #suffix_set = [ W[i-j:i] for j in range(1,i) ]
         #print i,suffix_set
         max_match = 0
         for suffix in suffix_set:
