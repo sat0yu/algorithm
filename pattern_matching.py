@@ -11,6 +11,7 @@ def Naive(T, W):
                 pos.append(head)
                 j = 0
         else:
+            i -= j
             j = 0
 
         i += 1
