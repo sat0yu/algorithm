@@ -16,10 +16,26 @@ def DevideEnumeration(X,i):
         XX.add(i)
         DevideEnumeration(XX, i-1)
 
+def GrayCode(N):
+    X = set([])
+    while not X == set([N,]):
+        print(X)
+        if len(X) % 2:
+            X = X.symmetric_difference(set([1+min(X)]))
+        else:
+            X = X.symmetric_difference(set([1]))
+
 if __name__ == "__main__":
     N = 5
+
     # Binary approach
+    print("Binary approach")
     BinaryEnumeration(N)
 
     # divide approach
+    print("divide approach")
     DevideEnumeration(set({}),N)
+
+    # gray code
+    print("gray code")
+    GrayCode(N)
