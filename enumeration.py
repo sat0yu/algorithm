@@ -25,6 +25,17 @@ def GrayCode(N):
         else:
             X = X.symmetric_difference(set([1]))
 
+def ReverseSearch(X, N):
+    print(X)
+    i = float("inf") if not len(X) > 0 else min(X)
+    if not i == 1:
+        j = 1
+        while not ( j == i or j > N ):
+            XX = X.copy()
+            XX.add(j)
+            ReverseSearch(XX, N)
+            j += 1
+
 if __name__ == "__main__":
     N = 5
 
@@ -39,3 +50,7 @@ if __name__ == "__main__":
     # gray code
     print("gray code")
     GrayCode(N)
+
+    # reverse search
+    print("reverse search")
+    ReverseSearch(set([]),N)
