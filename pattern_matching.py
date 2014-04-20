@@ -1,62 +1,65 @@
 #coding=utf-8
+from __future__ import division, print_function, unicode_literals
+from future_builtins import *
 
-def Naive(T, W):
-    i, j = 0, 0
+import timeit
+
+def Naive(T, P):
+    i, N, M = 0, len(T), len(P)
     pos = []
-    while i < len(T) and j < len(W):
-        if T[i] == W[j]:
+    while i < N - M:
+        j = 0
+        while j < M:
+            if T[i+j] != P[j]: break
             j += 1
-            if j == len(W):
-                head = i - j + 1
-                pos.append(head)
-                j = 0
-        else:
-            i -= j
-            j = 0
+        if j == M:
+            pos.append(i)
 
         i += 1
 
     return pos
 
-def KnuthMorrisPratt(T, W):
+def KnuthMorrisPratt(T, P):
     pos = []
     # create table
-    P = [-1,0]
-    for i in range(2,len(W)):
-        suffix_set = [ W[i-j:i] for j in range(1,2+P[i-1]) ]
-        #suffix_set = [ W[i-j:i] for j in range(1,i) ]
-        #print i,suffix_set
+    Q = [-1,0]
+    for i in range(2,len(P)):
+        suffix_set = [ P[i-j:i] for j in range(1,2+Q[i-1]) ]
         max_match = 0
         for suffix in suffix_set:
             matched = 0
             for k,x in enumerate(suffix):
-                if x != W[k]:
+                if x != P[k]:
                     break
                 else:
                     matched = k+1
             if matched > max_match: max_match = matched
-        P.append(max_match)
+        Q.append(max_match)
 
     # search
     i, m = 0, 0
     while m + i < len(T):
-        if W[i] == T[m + i]:
+        if P[i] == T[m + i]:
             i += 1
-            if i == len(W):
+            if i == len(P):
                 pos.append(m)
                 i = 0
                 m += 1
         else:
-            m += i - P[i]
+            m += i - Q[i]
             if i > 0:
-                i = P[i]
+                i = Q[i]
     return pos
 
-T = u"""aaaabsdajsbddsshdaabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabfaksdueabsdajsbddsshdaabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabfaksdueabsdajsbddsshdaabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabfaksdueabsdajsbddsshdaabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabfaksdueabsdajsbddsshdaabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabfaksduebsdajsbddsshdaabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfhdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayaabsdajsbdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsayabsdajsbdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsaydgakdvalidfagslakhabsdajsbdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsaydgakdvalidfagslakhabsdajsbdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsaydgakdvalidfagslakhabsdajsbdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsaydgakdvalidfagslakhabsdajsbdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsaydgakdvalidfagslakhbsdajsbdshdabcdabdabfaksduebaubruaabcdabdbasygavksbkajsdakhgfasvdbvansbvanbavsnbavdkjashblkfagsaydgakdvalidfagslakh"""
+if __name__ == '__main__':
+    T = "this it the sample text from which Search methods search the Pattern."
+    T += "Naive Search Algorithm needs O(NM) comparison."
+    T += "KnuthMorrisPratt Search Algorithm can search only with O(N+M) comparison."
+    P = "Search"
+    print("Naive(T,P): ", Naive(T,P))
+    print("KnuthMorrisPratt(T,P): ", KnuthMorrisPratt(T,P))
 
-print Naive(T, u"abcdabd")
-print KnuthMorrisPratt(T, u"abcdabd")
-
-#print KnuthMorrisPratt(T, u"Knuth")
-#print KnuthMorrisPratt(T, u"Pratt")
-#print KnuthMorrisPratt(T, u"アルゴリズム")
+    t1 = timeit.Timer('Naive(T,P)', 'from __main__ import T, P, Naive')
+    t2 = timeit.Timer('KnuthMorrisPratt(T,P)', 'from __main__ import T, P, KnuthMorrisPratt')
+    print("Naive: ", t1.timeit(10000))
+    print("KnuthMorrisPratt: ", t2.timeit(10000))
