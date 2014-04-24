@@ -55,10 +55,10 @@ def BoyerMoore(T, P):
     N, M = len(T), len(P)
     # construct shift table
     table = {}
-    for i,c in enumerate( reversed(P) ):
-        if not table.has_key(c):
-            table[c] = i
-    table[ P[-1] ] = M
+    for i,c in enumerate(P[:-1]):
+        table[c] = (M-1) - i
+    if not table.has_key( P[-1] ):
+        table[ P[-1] ] = M
 
     # serach
     pos = []
