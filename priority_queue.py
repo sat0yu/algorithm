@@ -4,9 +4,13 @@ from future_builtins import *
 
 import math
 
-class MaximumBinaryHeap:
-    def __init__(self):
+class BinaryHeap:
+    def __init__(self, compare=None):
         self.array = []
+        if compare is not None:
+            self.compare = compare
+        else:
+            self.compare = (lambda i,j: i < j)
 
     def print_dump(self):
         if len(self.array) > 0:
@@ -24,7 +28,7 @@ class MaximumBinaryHeap:
 
         piv = len(self.array)
         i = int( math.floor(piv / 2) )
-        while i > 0 and self.array[piv-1] > self.array[i-1]:
+        while i > 0 and self.compare(self.array[piv-1], self.array[i-1]):
             temp = self.array[i-1]
             self.array[i-1] = self.array[piv-1]
             self.array[piv-1] = temp
@@ -39,8 +43,8 @@ class MaximumBinaryHeap:
         if not( len(self.array) > 1 ): return returned
 
         piv = 1
-        i = 2 if ( len(self.array) is 2 ) or ( self.array[1] > self.array[2] ) else 3
-        while self.array[piv-1] < self.array[i-1]:
+        i = 2 if ( len(self.array) is 2 ) or self.compare(self.array[1], self.array[2]) else 3
+        while self.compare(self.array[i-1], self.array[piv-1]):
             temp = self.array[i-1]
             self.array[i-1] = self.array[piv-1]
             self.array[piv-1] = temp
@@ -52,7 +56,7 @@ class MaximumBinaryHeap:
             ## if pivot node has two children
             elif right_child < len(self.array):
                 ## select a bigger child to maintain the heap-structure
-                if self.array[ right_child-1 ] > self.array[ (right_child+1)-1 ]:
+                if self.compare(self.array[ right_child-1 ], self.array[ (right_child+1)-1 ]):
                     i = right_child
                 else:
                     i = right_child + 1
@@ -68,7 +72,7 @@ class MaximumBinaryHeap:
     def remove(self): return self.down_heap()
 
 if __name__ == "__main__":
-    h = MaximumBinaryHeap()
+    h = BinaryHeap()
     for i in range(16):
         h.append(i)
     h.print_dump()
