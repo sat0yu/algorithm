@@ -13,72 +13,80 @@ typedef unsigned short lBlock;
 
 class BitVector{
 private:
-    int n, l, s, len_p;
-    size_t sBLC, lBLC;
+    int n, l, s;
+    size_t sBLC, lBLC, len_l, len_s, len_p, size_l, size_s;
     vector<sBlock> B, S, P;
     vector<lBlock> L;
 public:
     ~BitVector(){
     };
     BitVector(const char* _B){
-        // initialize constants
+        //----- initialize constants -----
         sBLC = 8 * sizeof(sBlock);
         lBLC = 8 * sizeof(lBlock);
-        printf("the size of a smaller block: %d\n", sBLC);
-        printf("the size of a larger block: %d\n", lBLC);
-
-        // create bit vector
         n = strlen(_B);
-        printf("n=%d\n", n);
-
-        B = vector<sBlock>( n >> 3 );
-        for(int i=0; i<n; ++i){
-            if( _B[i] - '0' ){ B[ i >> 3 ] |= 1 << (i & 0x07); }
-        }
-
-        // create Fully Indexable Dictionary
         int log2n = (int)ceil( log2(n) );
-        // s = lg(n)/2 bits are covered by S[i]
-        // S[i] can be stored in lg(l) (bits)
+        /* s = lg(n)/2 bits are covered by S[i] */
+        /* S[i] can be stored in lg(l) (bits) */
         s = ceil( log2n / 2. );
-        // l = lg^2(n) bits are covered by L[i]
-        // L[i] can be stored in lg(n) (bits)
+        len_s = (int)ceil( n / (double)s );
+        /* l = lg^2(n) bits are covered by L[i] */
+        /* L[i] can be stored in lg(n) (bits) */
         l = log2n * log2n;
-        // make the size of l be a multiple of s
         while( l % s ){ l++; }
-        // |P[0, 2^s)|
+        len_l = (int)ceil( n / (double)l );
+        /* |P[0, 2^s)| */
         len_p = 1 << s;
 
-        printf("l=%d, sizeof(L[i])=%d(bits)\n", l, (int)ceil(log2(n)));
-        printf("s=%d, sizeof(S[i])=%d(bits)\n", s, (int)ceil(log2(l)));
-        printf("|P|=%d\n", len_p);
+        size_l = (int)ceil( log2(n) );
+        size_s = (int)ceil( log2(l) );
+        if( size_l > lBLC ){
+            printf("exceed the expected number of bits for L[i], L[i] needs %d bits\n", (int)size_l);
+            exit(1);
+        }
+        if( size_s > sBLC ){
+            printf("exceed the expected number of bits for S[i], S[i] needs %d bits\n", (int)size_s);
+            exit(1);
+        }
 
-        L = vector<lBlock>( (int)ceil( n / (double)l ) );
-        S = vector<sBlock>( (int)ceil( n / (double)s ) );
-        P = vector<sBlock>( len_p );
+        printf("the size of a smaller block: %d\n", (int)sBLC);
+        printf("the size of a larger block: %d\n", (int)lBLC);
+        printf("n=%d\n", n);
+        printf("l=%d, sizeof(L[i])=%d(bits)\n", l, (int)size_l);
+        printf("s=%d, sizeof(S[i])=%d(bits)\n", s, (int)size_s);
+        printf("|P|=%d\n", (int)len_p);
 
-        // initialize L[0,n/l), S[0,n/s)
+        //----- reserve mamory spaces of B, L, S, and P -----
+        B.resize( n >> 3 );
+        L.resize( len_l );
+        S.resize( len_s );
+        P.resize( len_p );
+
+        //----- create bit vector -----
         L[0] = S[0] = 0;
         for(int i=0,j=0,k=0; i < n; ++i){
+            if( !( i & 0x07 ) ){ B[ i >> 3 ] = 0; }
+
             if( !( i % l ) ){
                 ++j;
-                L[j] = L[j-1];
+                if( j < len_l ){ L[j] = L[j-1]; };
             }
 
             if( !( i % s ) ){
                 if( !( i % l ) ){ S[k] = 0; }
                 ++k;
-                S[k] = S[k-1];
+                if( k < len_s ){ S[k] = S[k-1]; }
             }
 
-            if( B[ i >> 3 ] & (1 << (i & 0x07)) ){
-                ++L[j];
-                ++S[k];
+            if( _B[i] - '0' ){
+                B[ i >> 3 ] |= 1 << (i & 0x07);
+                if( j < len_l ){ ++L[j]; }
+                if( k < len_s ){ ++S[k]; }
             }
 
         }
 
-        // initialize P[0,i)
+        //----- initialize P[0,i) -----
         for(int i=0; i < (1 << s); ++i){
             P[i] = 0;
             for(int j=1; j <= (1 << s); j <<= 1){
