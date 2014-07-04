@@ -131,6 +131,22 @@ public:
         return L[ i / l ] + S[ i / s ] + P[ (bitseq & mask) ];
     };
 
+    int select(int i){
+        int s=0, e=n, m, r;
+        while(s != e){
+            m = (s+e)/2;
+            r = rank(m+1);
+//            printf("i:%d,r:%d,s:%d,e:%d\n", i, r, s, e);
+            if( i < r ){
+                e = m;
+            }else{
+                s = m + 1;
+            }
+        }
+//        printf("i:%d,r:%d,s:%d,e:%d\n", i, r, s, e);
+        return s;
+    }
+
     sBlock set(int i, char b){
         if( b - '0' > 0 ){
             return B[ i >> 3 ] |= 1 << ( i & 0x07 );
@@ -160,17 +176,29 @@ int main(){
 
     // a test for rank
     result = true;
+    int naive=0;
     for(int i=0; i<strlen(B); ++i){
-        int naive=0;
-        for(int j=0; j<i; ++j){ naive += ( B[j] - '0' ) ? 1 : 0; }
-
+        if( i > 0 ){ naive += ( B[i-1] - '0' ) ? 1 : 0; }
         int r = bv.rank(i);
         if( r != naive ){
             printf("rank(B,%d)=%d (counted naively:rank(B,%d)=%d)\n", i, r, i, naive);
             result = false;
         }
     }
-    if(result){ printf("rank(i) test: clear.\n"); }
+    if(result){ printf("Rank(i) test: clear.\n"); }
+
+    // a test for select
+    result = true;
+    for(int i=0, k=0, s=0; i<strlen(B); ++i){
+        if(B[i] - '0'){
+            if( i != (s = bv.select(k)) ){
+                printf("select(B,%d)=%d (counted naively:select(B,%d)=%d)\n", k, s, k, i);
+                result = false;
+            }
+            k++;
+        }
+    }
+    if(result){ printf("Select(i) test: clear.\n"); }
 
     // a test for set
     result = true;
