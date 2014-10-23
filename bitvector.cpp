@@ -5,6 +5,7 @@
 #include<stdlib.h>
 #include<string.h>
 #include<math.h>
+#include<ctime>
 
 #define TYPE_TO_BITS(X) (8 * sizeof(X))
 #define DIVIDE8(X) ((X) >> 3)
@@ -22,7 +23,7 @@ typedef unsigned long long ULL;
 typedef size_t size_array;
 typedef size_t size_bits;
 
-class BitVector{
+class BitVector{/*{{{*/
 private:
     size_array len_S, len_L, len_P, len_B;
     size_bits bits_B, bits_P, bits_S, bits_L, n, b, s, l;
@@ -139,8 +140,9 @@ public:
         }
 
         // (2) create a mask with the same width of the bits
-        ULL mask = 0;
-        for(int j=(i % s)-1; j >= 0; j--){ mask |= (1 << j); }
+        ULL mask = (1 << (i % s)) - 1;
+        //ULL mask = 0;
+        //for(int j=(i % s)-1; j >= 0; j--){ mask |= (1 << j); }
 
         return L[ i / l ] + S[ i / s ] + P[ (int)(bitseq & mask) ];
     };
@@ -167,17 +169,27 @@ public:
             return B[ DIVIDE8(i) ] &= ~( 1 << MOD8(i) );
         }
     };
-};
+};/*}}}*/
 
-int main(){
+int test_for_bitvector(){/*{{{*/
     ifstream ifs("./data/bits.dat", ifstream::in);
     string str;
     ifs >> str;
     const char* B = str.c_str();
-    BitVector bv = BitVector(B);
+    clock_t s_time, e_time;
+    double duration;
     bool result;
 
-    // a test for access
+    s_time = clock();
+    // <construst an instance>
+    BitVector bv = BitVector(B);
+    // </construst an instance>
+    e_time = clock();
+    duration = (double)(e_time - s_time) / (double)CLOCKS_PER_SEC;
+    printf("construction: %f [s]\n", duration);
+
+    s_time = clock();
+    // <a test for access>
     result = true;
     for(int i=0; i<strlen(B); ++i){
         if( bv.access(i) != B[i] ){
@@ -187,8 +199,13 @@ int main(){
     }
     if(result){ printf("Access(i) test: clear.\n"); }
     else{exit(1);}
+    // </a test for access>
+    e_time = clock();
+    duration = (double)(e_time - s_time) / (double)CLOCKS_PER_SEC;
+    printf("Acsess(i) test: %f [s]\n", duration);
 
-    // a test for rank
+    s_time = clock();
+    // <a test for rank>
     result = true;
     int naive=0;
     for(int i=0; i<strlen(B); ++i){
@@ -201,8 +218,13 @@ int main(){
     }
     if(result){ printf("Rank(i) test: clear.\n"); }
     else{exit(1);}
+    // <a test for rank>
+    e_time = clock();
+    duration = (double)(e_time - s_time) / (double)CLOCKS_PER_SEC;
+    printf("Rank(i) test: %f [s]\n", duration);
 
-    // a test for select
+    s_time = clock();
+    // <a test for select>
     result = true;
     for(int i=0, k=0, s=0; i<strlen(B); ++i){
         if(B[i] - '0'){
@@ -215,8 +237,13 @@ int main(){
     }
     if(result){ printf("Select(i) test: clear.\n"); }
     else{exit(1);}
+    // </a test for select>
+    e_time = clock();
+    duration = (double)(e_time - s_time) / (double)CLOCKS_PER_SEC;
+    printf("Select(i) test: %f [s]\n", duration);
 
-    // a test for set
+    s_time = clock();
+    // <a test for set>
     result = true;
     for(int i=0; i<strlen(B); ++i){
         int ir = rand();
@@ -229,4 +256,15 @@ int main(){
     }
     if(result){ printf("Set(i,b) test: clear.\n"); }
     else{exit(1);}
+    // </a test for set>
+    e_time = clock();
+    duration = (double)(e_time - s_time) / (double)CLOCKS_PER_SEC;
+    printf("Set(i,b) test: %f [s]\n", duration);
+
+    return 0;
+};/*}}}*/
+
+int main(){
+    test_for_bitvector();
 }
+/* vim:set foldmethod=marker commentstring=//%s : */
