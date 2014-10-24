@@ -11,6 +11,10 @@
 #define DIVIDE8(X) ((X) >> 3)
 #define MOD8(X) ((X) & 0x07)
 #define LSB(X) ((X) & 0x01)
+#define MAX(X,Y) ((X > Y) ? X : Y)
+
+#define UB_ALPHABET_SIZE 10000
+#define UB_TEXT_SIZE 10000
 
 using namespace std;
 
@@ -18,35 +22,82 @@ typedef unsigned char block_b; /* DO NOT CHANGE THE SIZE OF B[i] */
 typedef unsigned short block_s;
 typedef unsigned int block_l;
 typedef unsigned char block_p;
+
+typedef unsigned char UCHAR;
+typedef unsigned char UINT;
+typedef unsigned short USHORT;
 typedef unsigned long long ULL;
 
 typedef size_t size_array;
 typedef size_t size_bits;
 
+class BitContainer{/*{{{*/
+private:
+    size_array len_B;
+    size_bits bits_B;
+    vector<block_b> B;
+public:
+    size_bits n, tail_idx;
+    ~BitContainer(){
+    };
+    BitContainer(int _n):
+        n(_n),
+        tail_idx(0),
+        bits_B(TYPE_TO_BITS(block_b))
+    {
+        len_B = (size_array)ceil( (int)n / (double)bits_B );
+        B.resize( len_B, 0 );
+    };
+    BitContainer():
+        n(UB_TEXT_SIZE),
+        tail_idx(0),
+        bits_B(TYPE_TO_BITS(block_b))
+    {
+        len_B = (size_array)ceil( (int)n / (double)bits_B );
+        B.resize( len_B, 0 );
+    };
+
+    const char access(int i){
+        return (B[ DIVIDE8(i) ] & ( 1 << MOD8(i) )) ? '1' : '0';
+    };
+
+    block_s set(int i, char b){
+        if( i > tail_idx ){ tail_idx = i; }
+        if( b - '0' > 0 ){
+            return B[ DIVIDE8(i) ] |= 1 << MOD8(i);
+        }else{
+            return B[ DIVIDE8(i) ] &= ~( 1 << MOD8(i) );
+        }
+    };
+
+    block_s append(char b){
+        if( b - '0' > 0 ){
+            B[ DIVIDE8(tail_idx) ] |= 1 << MOD8(tail_idx);
+        }else{
+            B[ DIVIDE8(tail_idx) ] &= ~( 1 << MOD8(tail_idx) );
+        }
+        return B[ DIVIDE8(tail_idx++) ];
+    };
+};/*}}}*/
+
 class BitVector{/*{{{*/
 private:
     size_array len_S, len_L, len_P, len_B;
-    size_bits bits_B, bits_P, bits_S, bits_L, n, b, s, l;
+    size_bits bits_B, bits_P, bits_S, bits_L, b, s, l;
     vector<block_b> B; /* in which a bit-vector is stored */
     vector<block_s> S; /* S: small blocks */
     vector<block_l> L; /* L: large blocks */
     vector<block_p> P; /* P: a dictionary of # of 1 in each bit-vector */
-public:
-    ~BitVector(){
-    };
-    BitVector(const char* _B){
-        //----- initialize constants -----
-        bits_B = b = TYPE_TO_BITS(block_b);
-        bits_P = TYPE_TO_BITS(block_p);
-        bits_S = TYPE_TO_BITS(block_s);
-        bits_L = TYPE_TO_BITS(block_l);
-
-        n = (size_bits)strlen(_B);
+    void initialize(size_bits N){
+        if( N == 0 ){
+            printf("BitVector initialization error\n");
+            exit(1);
+        }
+        n = N;
         int log2n = (int)ceil( log2( (int)n ) );
-        s = (size_bits)ceil( log2n / 2. ); /* s = lg(n)/2 bits in B are covered by S[i] */
-        l = (size_bits)(log2n * log2n); /* l = lg^2(n) bits in B are covered by L[i] */
+        s = (size_bits)MAX(1, ceil(log2n / 2.)); /* s = lg(n)/2 bits in B are covered by S[i] */
+        l = (size_bits)MAX(1, (log2n * log2n)); /* l = lg^2(n) bits in B are covered by L[i] */
         while( l % s ){ l++; } /* make l become a multiple of s */
-
         len_B = (size_array)ceil( (int)n / (double)b ); /* |B[]| */
         len_S = (size_array)ceil( (int)n / (double)s ); /* |S[]| */
         len_L = (size_array)ceil( (int)n / (double)l ); /* |L[]| */
@@ -71,22 +122,84 @@ public:
         }
 
         //----- show status -----
-        printf("n: %d\n", (int)n);
-        printf("# of bits in B, that are covered by L[i]:%d\n", (int)l);
-        printf("# of bits in B, that are covered by S[i]:%d\n", (int)s);
-        printf("len(B): %d, # of bits of B[i]: %d\n", (int)len_B, (int)b);
-        printf("len(S): %d, # of bits of S[i]: %d (%d bits are required)\n", \
-                (int)len_S, (int)bits_S, (int)required_bits_s );
-        printf("len(L): %d, # of bits of L[i]: %d (%d bits are required)\n", \
-                (int)len_L, (int)bits_L, (int)required_bits_l );
-        printf("len(P): %d  # of bits of P[i]: %d (%d bits are required)\n", \
-                (int)len_P, (int)bits_P, (int)required_bits_p);
-
+//        printf("n: %d\n", (int)n);
+//        printf("# of bits in B, that are covered by L[i]:%d\n", (int)l);
+//        printf("# of bits in B, that are covered by S[i]:%d\n", (int)s);
+//        printf("len(B): %d, # of bits of B[i]: %d\n", (int)len_B, (int)b);
+//        printf("len(S): %d, # of bits of S[i]: %d (%d bits are required)\n", \
+//                (int)len_S, (int)bits_S, (int)required_bits_s );
+//        printf("len(L): %d, # of bits of L[i]: %d (%d bits are required)\n", \
+//                (int)len_L, (int)bits_L, (int)required_bits_l );
+//        printf("len(P): %d  # of bits of P[i]: %d (%d bits are required)\n", \
+//                (int)len_P, (int)bits_P, (int)required_bits_p);
+//
         //----- reserve mamories for B, L, S, and P -----
-        B.resize( len_B );
+        B.resize( len_B, 0 );
         L.resize( len_L );
         S.resize( len_S );
         P.resize( len_P );
+
+        //----- initialize P[0,i) -----
+        for(int i=0; i < len_P; ++i){
+            P[i] = 0;
+            for(int j=i; j > 0; j >>= 1){ /* check bits from right to left */
+                if( LSB(j) ){ ++P[i]; }
+            }
+        }
+    };
+public:
+    size_bits n;
+    ~BitVector(){
+    };
+    BitVector(const BitVector &bv):
+        bits_B(TYPE_TO_BITS(block_b)),
+        b(TYPE_TO_BITS(block_b)),
+        bits_P(TYPE_TO_BITS(block_p)),
+        bits_S(TYPE_TO_BITS(block_s)),
+        bits_L(TYPE_TO_BITS(block_l))
+    {
+        initialize(bv.n);
+    }
+    BitVector(BitContainer &bc):
+        bits_B(TYPE_TO_BITS(block_b)),
+        b(TYPE_TO_BITS(block_b)),
+        bits_P(TYPE_TO_BITS(block_p)),
+        bits_S(TYPE_TO_BITS(block_s)),
+        bits_L(TYPE_TO_BITS(block_l))
+    {
+        //----- initialization -----
+        initialize( bc.tail_idx );
+
+        //----- create bit vector -----
+        L[0] = S[0] = 0;
+        for(int i=0, j=0, k=0; i < n; ++i){
+            if( !( i % l ) ){
+                ++j;
+                if( j < len_L ){ L[j] = L[j-1]; };
+            }
+
+            if( !( i % s ) ){
+                if( !( i % l ) ){ S[k] = 0; } /* if the index of L, j is also incremented */
+                ++k;
+                if( k < len_S ){ S[k] = S[k-1]; }
+            }
+
+            if( bc.access(i) ){
+                B[ DIVIDE8(i) ] |= 1 << MOD8(i); /* regist bits from right to left */
+                if( j < len_L ){ ++L[j]; }
+                if( k < len_S ){ ++S[k]; }
+            }
+        }
+    };
+    BitVector(const char* _B):
+        bits_B(TYPE_TO_BITS(block_b)),
+        b(TYPE_TO_BITS(block_b)),
+        bits_P(TYPE_TO_BITS(block_p)),
+        bits_S(TYPE_TO_BITS(block_s)),
+        bits_L(TYPE_TO_BITS(block_l))
+    {
+        //----- initialization -----
+        initialize( (size_bits)strlen(_B) );
 
         //----- create bit vector -----
         L[0] = S[0] = 0;
@@ -94,8 +207,6 @@ public:
          * j: the index of L,
          * k: the index of S */
         for(int i=0, j=0, k=0; i < n; ++i){
-            if( !MOD8(i) ){ B[ DIVIDE8(i) ] = 0; } /* initialize each elem of B */
-
             if( !( i % l ) ){
                 ++j;
                 if( j < len_L ){ L[j] = L[j-1]; };
@@ -114,17 +225,7 @@ public:
                 if( j < len_L ){ ++L[j]; }
                 if( k < len_S ){ ++S[k]; }
             }
-
         }
-
-        //----- initialize P[0,i) -----
-        for(int i=0; i < len_P; ++i){
-            P[i] = 0;
-            for(int j=i; j > 0; j >>= 1){ /* check bits from right to left */
-                if( LSB(j) ){ ++P[i]; }
-            }
-        }
-
     };
 
     const char access(int i){
