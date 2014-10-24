@@ -365,7 +365,137 @@ int test_for_bitvector(){/*{{{*/
     return 0;
 };/*}}}*/
 
+class WaveletTree{
+    class Node{
+    private:
+    public:
+        int max, th, n;
+        BitVector *BV;
+        BitContainer BC;
+        void constructBitVector(){
+            BV = new BitVector(BC);
+            n = BV->n;
+        };
+        Node(int n):
+            max(0),
+            th(0),
+            n(0),
+            BV(NULL),
+            BC(n)
+        {};
+    };
+
+private:
+    size_t sigma, n;
+    vector<int> dict;
+    vector<Node> nodes;
+    pair<int, char> traverse(int n_idx, int v){
+        if(n_idx >= nodes.size()){
+            return pair<int, char>(-1, '0');
+        }
+        int ch_idx;
+        char direc;
+        if( v <= nodes[n_idx].th ){
+            ch_idx = 2 * n_idx;
+            direc = '0';
+        }else{
+            ch_idx = 2 * n_idx + 1;
+            direc = '1';
+        }
+        return pair<int, char>(ch_idx, direc);
+    }
+public:
+    ~WaveletTree(){
+    };
+    WaveletTree(vector<int> _S){
+        n = _S.size();
+
+        //----- sort characters by bucket-sort -----
+        vector<char> bucket(UB_ALPHABET_SIZE, 0);
+        vector<int>::iterator it_S = _S.begin(), end_it_S = _S.end();
+        for(sigma=0; it_S != end_it_S; ++it_S){
+            sigma += ( bucket[*it_S] > 0 ) ? 0 : 1;
+            bucket[*it_S] = 1;
+        }
+        for(int pow=1,tmp=sigma; pow<tmp; pow<<=1){sigma=(pow<<1);} /* make sigma a power of 2 */
+        dict.resize(sigma, 0);
+        vector<char>::iterator it_b = bucket.begin(), end_it_b = bucket.end();
+        for(int d_idx=0; it_b != end_it_b; ++it_b){
+            if( *it_b > 0 ){
+                dict[d_idx++] = (int)distance(bucket.begin(), it_b);
+            }
+        }
+
+        //----- construct alphabet tree -----
+        nodes.resize(2*sigma, n); /* using 1-origin indices */
+        for(int i=0; i<sigma; i++){
+            /* later half of nodes[] corresspond to leaves*/
+            nodes[i+sigma].max = dict[i];
+            nodes[i+sigma].th = dict[i];
+        }
+        for(int i=sigma-1; i>0; i--){
+            /* create non-leaf nodes in a way like merge sort */
+            int l_child = nodes[2*i].max, r_child = nodes[2*i+1].max;
+            /* if the max of child is 0(empty), then use left child */
+            nodes[i].max = (r_child == 0) ? l_child : r_child;
+            nodes[i].th = l_child;
+        }
+
+        //----- construct wavelet tree -----
+        for(int i=0, end_i=_S.size(); i<end_i; ++i){ /* regist characters, one by one */
+            for(int n_idx=1;;){ /* the index of root node is 1 */
+                pair<int, char> ret = traverse(n_idx, _S[i]);
+                if(ret.first < 0){ break; }
+                nodes[n_idx].BC.append(ret.second);
+                n_idx = ret.first;
+            }
+        }
+
+        //----- show tree -----
+        size_bits log2sigma = (size_bits)ceil(log2(sigma));
+        for(int d=0; d<log2sigma; d++){
+            for(int i=(1 << d); i<(1 << (d+1)); i++){
+                for(int j=d; j<log2sigma; j++){ cout << "\t"; }
+                if(i%2){ cout << "1:"; }
+                else{ cout << "0:"; }
+                for(int k=0; k<nodes[i].BC.tail_idx; k++){
+                    cout << nodes[i].BC.access(k);
+                }
+            }
+            cout << endl << endl;
+        }
+
+        //----- convert BitContainer to BitVector -----
+        vector<Node>::iterator it_n=nodes.begin(), end_it_n=nodes.end();
+        for(; it_n != end_it_n; ++it_n){
+            if( (*it_n).BC.tail_idx > 0 ){
+                (*it_n).constructBitVector();
+            }
+        }
+    };
+};
+
+int test_for_wavelettree(){//{{{
+    ifstream ifs("./data/series.dat", ifstream::in);
+    string str;
+    vector<int> S;
+    while( ifs >> str ){ S.push_back( atoi(str.c_str()) ); }
+    clock_t s_time, e_time;
+    double duration;
+
+    s_time = clock();
+    // <construst an instance>
+    WaveletTree wt = WaveletTree(S);
+    // </construst an instance>
+    e_time = clock();
+    duration = (double)(e_time - s_time) / (double)CLOCKS_PER_SEC;
+    printf("construction: %f [s]\n", duration);
+
+    return 0;
+};//}}}
+
 int main(){
-    test_for_bitvector();
+    //test_for_bitvector();
+    test_for_wavelettree();
 }
 /* vim:set foldmethod=marker commentstring=//%s : */
