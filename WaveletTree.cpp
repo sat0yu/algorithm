@@ -80,7 +80,7 @@ public:
     };
 };/*}}}*/
 
-class BitVector{/*{{{*/
+class BitVector{/**/
 private:
     size_array len_S, len_L, len_P, len_B;
     size_bits bits_B, bits_P, bits_S, bits_L, b, s, l;
@@ -94,9 +94,9 @@ private:
             exit(1);
         }
         n = N;
-        int log2n = (int)ceil( log2( (int)n ) );
+        double log2n = log2( (int)n );
         s = (size_bits)MAX(1, ceil(log2n / 2.)); /* s = lg(n)/2 bits in B are covered by S[i] */
-        l = (size_bits)MAX(1, (log2n * log2n)); /* l = lg^2(n) bits in B are covered by L[i] */
+        l = (size_bits)MAX(2, (int)(log2n * log2n)); /* l = lg^2(n) bits in B are covered by L[i] */
         while( l % s ){ l++; } /* make l become a multiple of s */
         len_B = (size_array)ceil( (int)n / (double)b ); /* |B[]| */
         len_S = (size_array)ceil( (int)n / (double)s ); /* |S[]| */
@@ -249,7 +249,7 @@ public:
     };
 
     int select(int i){
-        int s=0, e=n, m, r;
+        int s=0, e=n-1, m, r;
         while(s != e){
             m = (s+e)/2;
             r = rank(m+1);
@@ -270,102 +270,110 @@ public:
             return B[ DIVIDE8(i) ] &= ~( 1 << MOD8(i) );
         }
     };
-};/*}}}*/
+};/**/
 
-int test_for_bitvector(){/*{{{*/
-    ifstream ifs("./data/bits.dat", ifstream::in);
-    string str;
-    ifs >> str;
-    const char* B = str.c_str();
-    clock_t s_time, e_time;
-    double duration;
-    bool result;
+int test_for_bitvector(int N){/**///{{{
+    srand(time(0));
+    for(int N_i=1; N_i<N; N_i<<=1){
+        int M = N_i + (rand() % N_i);
 
-    s_time = clock();
-    // <construst an instance>
-    BitVector bv = BitVector(B);
-    // </construst an instance>
-    e_time = clock();
-    duration = (double)(e_time - s_time) / (double)CLOCKS_PER_SEC;
-    printf("construction: %f [s]\n", duration);
+        printf("\na test in the condition n=%d starts;\n", M);
 
-    s_time = clock();
-    // <a test for access>
-    result = true;
-    for(int i=0; i<strlen(B); ++i){
-        if( bv.access(i) != B[i] ){
-            printf("bv[%d]=%c, B[%d]=%c\n", i, bv.access(i), i, B[i]);
-            result = false;
+        char *B = (char*)malloc((M+1)*sizeof(char));
+        for(int i=0; i<M; i++){
+            B[i] = (rand() % 2) ? '1' : '0';
         }
-    }
-    if(result){ printf("Access(i) test: clear.\n"); }
-    else{exit(1);}
-    // </a test for access>
-    e_time = clock();
-    duration = (double)(e_time - s_time) / (double)CLOCKS_PER_SEC;
-    printf("Acsess(i) test: %f [s]\n", duration);
+        B[N_i] = '\0';
 
-    s_time = clock();
-    // <a test for rank>
-    result = true;
-    int naive=0;
-    for(int i=0; i<strlen(B); ++i){
-        if( i > 0 ){ naive += ( B[i-1] - '0' ) ? 1 : 0; }
-        int r = bv.rank(i);
-        if( r != naive ){
-            printf("rank(B,%d)=%d (counted naively:rank(B,%d)=%d)\n", i, r, i, naive);
-            result = false;
-        }
-    }
-    if(result){ printf("Rank(i) test: clear.\n"); }
-    else{exit(1);}
-    // <a test for rank>
-    e_time = clock();
-    duration = (double)(e_time - s_time) / (double)CLOCKS_PER_SEC;
-    printf("Rank(i) test: %f [s]\n", duration);
+        clock_t s_time, e_time;
+        double duration;
+        bool result;
 
-    s_time = clock();
-    // <a test for select>
-    result = true;
-    for(int i=0, k=0, s=0; i<strlen(B); ++i){
-        if(B[i] - '0'){
-            if( i != (s = bv.select(k)) ){
-                printf("select(B,%d)=%d (counted naively:select(B,%d)=%d)\n", k, s, k, i);
+        s_time = clock();
+        // <construst an instance>
+        BitVector bv = BitVector(B);
+        // </construst an instance>
+        e_time = clock();
+        duration = (double)(e_time - s_time) / (double)CLOCKS_PER_SEC;
+        printf("construction: OK\t %f [s]\n", duration);
+
+        s_time = clock();
+        // <a test for access>
+        result = true;
+        for(int i=0; i<strlen(B); ++i){
+            if( bv.access(i) != B[i] ){
+                printf("bv[%d]=%c, B[%d]=%c\n", i, bv.access(i), i, B[i]);
                 result = false;
             }
-            k++;
         }
-    }
-    if(result){ printf("Select(i) test: clear.\n"); }
-    else{exit(1);}
-    // </a test for select>
-    e_time = clock();
-    duration = (double)(e_time - s_time) / (double)CLOCKS_PER_SEC;
-    printf("Select(i) test: %f [s]\n", duration);
+        if(!result){ exit(1); }
+        // </a test for access>
+        e_time = clock();
+        duration = (double)(e_time - s_time) / (double)CLOCKS_PER_SEC;
+        printf("Acsess(i) test: OK\t %f [s]\n", duration);
 
-    s_time = clock();
-    // <a test for set>
-    result = true;
-    for(int i=0; i<strlen(B); ++i){
-        int ir = rand();
-        char b = ((ir*ir) & 1) + '0';
-        bv.set(i, b);
-        if( bv.access(i) != b ){
-            printf("bv[%d]=%c, r=%c\n", i, bv.access(i), b);
-            result = false;
-        };
+        s_time = clock();
+        // <a test for rank>
+        result = true;
+        int naive=0;
+        for(int i=0; i<strlen(B); ++i){
+            if( i > 0 ){ naive += ( B[i-1] - '0' ) ? 1 : 0; }
+            int r = bv.rank(i);
+            if( r != naive ){
+                printf("rank(B,%d)=%d (counted naively:rank(B,%d)=%d)\n", i, r, i, naive);
+                result = false;
+            }
+        }
+        if(!result){ exit(1); }
+        // <a test for rank>
+        e_time = clock();
+        duration = (double)(e_time - s_time) / (double)CLOCKS_PER_SEC;
+        printf("Rank(i) test: OK\t %f [s]\n", duration);
+
+        s_time = clock();
+        // <a test for select>
+        result = true;
+        for(int i=0, k=0, s=0; i<strlen(B); ++i){
+            if(B[i] - '0'){
+                if( i != (s = bv.select(k)) ){
+                    printf("select(B,%d)=%d (counted naively:select(B,%d)=%d)\n", k, s, k, i);
+                    result = false;
+                }
+                k++;
+            }
+        }
+        if(!result){ printf("B:%s\n", B); exit(1); }
+        if(!result){ exit(1); }
+        // </a test for select>
+        e_time = clock();
+        duration = (double)(e_time - s_time) / (double)CLOCKS_PER_SEC;
+        printf("Select(i) test: OK\t %f [s]\n", duration);
+
+        s_time = clock();
+        // <a test for set>
+        result = true;
+        for(int i=0; i<strlen(B); ++i){
+            int ir = rand();
+            char b = ((ir*ir) & 1) + '0';
+            bv.set(i, b);
+            if( bv.access(i) != b ){
+                printf("bv[%d]=%c, r=%c\n", i, bv.access(i), b);
+                result = false;
+            };
+        }
+        if(!result){ exit(1); }
+        // </a test for set>
+        e_time = clock();
+        duration = (double)(e_time - s_time) / (double)CLOCKS_PER_SEC;
+        printf("Set(i,b) test: OK\t %f [s]\n", duration);
+
+        free(B);
     }
-    if(result){ printf("Set(i,b) test: clear.\n"); }
-    else{exit(1);}
-    // </a test for set>
-    e_time = clock();
-    duration = (double)(e_time - s_time) / (double)CLOCKS_PER_SEC;
-    printf("Set(i,b) test: %f [s]\n", duration);
 
     return 0;
-};/*}}}*/
+};/**///}}}
 
-class WaveletTree{
+class WaveletTree{//{{{
     class Node{
     private:
     public:
@@ -473,7 +481,7 @@ public:
             }
         }
     };
-};
+};//}}}
 
 int test_for_wavelettree(){//{{{
     ifstream ifs("./data/series.dat", ifstream::in);
@@ -495,7 +503,7 @@ int test_for_wavelettree(){//{{{
 };//}}}
 
 int main(){
-    //test_for_bitvector();
-    test_for_wavelettree();
+    test_for_bitvector(100000);
+    //test_for_wavelettree();
 }
 /* vim:set foldmethod=marker commentstring=//%s : */
