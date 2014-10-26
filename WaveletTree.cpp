@@ -184,7 +184,7 @@ public:
                 if( k < len_S ){ S[k] = S[k-1]; }
             }
 
-            if( bc.access(i) ){
+            if( bc.access(i) - '0' ){
                 B[ DIVIDE8(i) ] |= 1 << MOD8(i); /* regist bits from right to left */
                 if( j < len_L ){ ++L[j]; }
                 if( k < len_S ){ ++S[k]; }
@@ -232,7 +232,7 @@ public:
         return (B[ DIVIDE8(i) ] & ( 1 << MOD8(i) )) ? '1' : '0';
     };
 
-    int rank(int i){
+    int rank1(int i){
         // (1) extract bits in B[i], that are covered by S[i]
         ULL bitseq = 0;
         int st = s * (i / s), en = st + s;
@@ -248,11 +248,15 @@ public:
         return L[ i / l ] + S[ i / s ] + P[ (int)(bitseq & mask) ];
     };
 
+    int rank0(int i){
+        return i - rank1(i);
+    }
+
     int select(int i){
         int s=0, e=n-1, m, r;
         while(s != e){
             m = (s+e)/2;
-            r = rank(m+1);
+            r = rank1(m+1);
             if( i < r ){
                 e = m;
             }else{
@@ -317,9 +321,9 @@ int test_for_bitvector(int N){/**///{{{
         int naive=0;
         for(int i=0; i<strlen(B); ++i){
             if( i > 0 ){ naive += ( B[i-1] - '0' ) ? 1 : 0; }
-            int r = bv.rank(i);
+            int r = bv.rank1(i);
             if( r != naive ){
-                printf("rank(B,%d)=%d (counted naively:rank(B,%d)=%d)\n", i, r, i, naive);
+                printf("rank1(B,%d)=%d (counted naively:rank1(B,%d)=%d)\n", i, r, i, naive);
                 result = false;
             }
         }
@@ -396,7 +400,7 @@ private:
     size_t sigma, n;
     vector<int> dict;
     vector<Node> nodes;
-    pair<int, char> traverse(int n_idx, int v){
+    pair<int, char> traverse_on_alphabet(int n_idx, int v){
         if(n_idx >= nodes.size()){
             return pair<int, char>(-1, '0');
         }
@@ -410,7 +414,14 @@ private:
             direc = '1';
         }
         return pair<int, char>(ch_idx, direc);
-    }
+    };
+    int traverse_on_wavelet(int n_idx, char b){
+        if( b - '0' > 0 ){
+            return (n_idx << 1) + 1;
+        }else{
+            return n_idx << 1;
+        }
+    };
 public:
     ~WaveletTree(){
     };
@@ -453,7 +464,7 @@ public:
         //----- construct wavelet tree -----
         for(int i=0, end_i=_S.size(); i<end_i; ++i){ /* regist characters, one by one */
             for(int n_idx=1;;){ /* the index of root node is 1 */
-                pair<int, char> ret = traverse(n_idx, _S[i]);
+                pair<int, char> ret = traverse_on_alphabet(n_idx, _S[i]);
                 if(ret.first < 0){ break; }
                 nodes[n_idx].BC.append(ret.second);
                 n_idx = ret.first;
@@ -484,6 +495,27 @@ public:
         }
         //printf("BitContainers are converted to BitVectors.\n");
     };
+
+    int access(int i){
+        int c=0;
+        char b;
+        for(
+                /* the index of root node is 1 */
+                int n_idx=1;
+                /* an elem in nodes[], whose index is larger than sigma, is corresspond a leaf*/
+                n_idx < sigma;
+                n_idx = traverse_on_wavelet(n_idx, b)
+            ){
+            b = nodes[n_idx].BV->access(i);
+            c = (c << 1) | (b - '0');
+            if(b - '0' > 0){
+                i = nodes[n_idx].BV->rank1(i);
+            }else{
+                i = nodes[n_idx].BV->rank0(i);
+            }
+        }
+        return dict[c];
+    };
 };
 
 int test_for_wavelettree(int length, int range){
@@ -498,6 +530,7 @@ int test_for_wavelettree(int length, int range){
 
             clock_t s_time, e_time;
             double duration;
+            bool result;
 
             s_time = clock();
             // <construst an instance>
@@ -506,6 +539,21 @@ int test_for_wavelettree(int length, int range){
             e_time = clock();
             duration = (double)(e_time - s_time) / (double)CLOCKS_PER_SEC;
             printf("construction: OK \t %f [s]\n", duration);
+
+            s_time = clock();
+            // <a test for access>
+            result = true;
+            for(int i=0, end_i=S.size(); i<end_i; ++i){
+                if( S[i] != wt.access(i) ){
+                    printf("S[%d]=%d, WT.access[%d]=%d\n", i, S[i], i, wt.access(i));
+                    result = false;
+                }
+            }
+            if(!result){ exit(1); }
+            // </a test for access>
+            e_time = clock();
+            duration = (double)(e_time - s_time) / (double)CLOCKS_PER_SEC;
+            printf("Acsess(i) test: OK\t %f [s]\n", duration);
         }
     }
 
@@ -513,8 +561,8 @@ int test_for_wavelettree(int length, int range){
 };
 
 int main(){
-    srand(time(0));
-    test_for_bitvector((UB_TEXT_SIZE >> 1));
+//    srand(time(0));
+//    test_for_bitvector((UB_TEXT_SIZE >> 1));
     test_for_wavelettree((UB_TEXT_SIZE >> 1), (UB_ALPHABET_SIZE >> 1));
 }
 /* vim:set foldmethod=marker commentstring=//%s : */
