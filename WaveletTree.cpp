@@ -13,8 +13,8 @@
 #define LSB(X) ((X) & 0x01)
 #define MAX(X,Y) ((X > Y) ? X : Y)
 
-#define UB_ALPHABET_SIZE 10000
-#define UB_TEXT_SIZE 10000
+#define UB_ALPHABET_SIZE 100000
+#define UB_TEXT_SIZE 1000000
 
 using namespace std;
 
@@ -80,7 +80,7 @@ public:
     };
 };/*}}}*/
 
-class BitVector{/**/
+class BitVector{/**///{{{
 private:
     size_array len_S, len_L, len_P, len_B;
     size_bits bits_B, bits_P, bits_S, bits_L, b, s, l;
@@ -270,10 +270,9 @@ public:
             return B[ DIVIDE8(i) ] &= ~( 1 << MOD8(i) );
         }
     };
-};/**/
+};/**///}}}
 
 int test_for_bitvector(int N){/**///{{{
-    srand(time(0));
     for(int N_i=1; N_i<N; N_i<<=1){
         int M = N_i + (rand() % N_i);
 
@@ -373,7 +372,7 @@ int test_for_bitvector(int N){/**///{{{
     return 0;
 };/**///}}}
 
-class WaveletTree{//{{{
+class WaveletTree{
     class Node{
     private:
     public:
@@ -433,6 +432,7 @@ public:
                 dict[d_idx++] = (int)distance(bucket.begin(), it_b);
             }
         }
+        //printf("given characters are sorted.\n");
 
         //----- construct alphabet tree -----
         nodes.resize(2*sigma, n); /* using 1-origin indices */
@@ -448,6 +448,7 @@ public:
             nodes[i].max = (r_child == 0) ? l_child : r_child;
             nodes[i].th = l_child;
         }
+        //printf("an alphabet tree is constructed.\n");
 
         //----- construct wavelet tree -----
         for(int i=0, end_i=_S.size(); i<end_i; ++i){ /* regist characters, one by one */
@@ -458,20 +459,21 @@ public:
                 n_idx = ret.first;
             }
         }
+        //printf("a wavelet tree is constructed.\n");
 
         //----- show tree -----
-        size_bits log2sigma = (size_bits)ceil(log2(sigma));
-        for(int d=0; d<log2sigma; d++){
-            for(int i=(1 << d); i<(1 << (d+1)); i++){
-                for(int j=d; j<log2sigma; j++){ cout << "\t"; }
-                if(i%2){ cout << "1:"; }
-                else{ cout << "0:"; }
-                for(int k=0; k<nodes[i].BC.tail_idx; k++){
-                    cout << nodes[i].BC.access(k);
-                }
-            }
-            cout << endl << endl;
-        }
+//        size_bits log2sigma = (size_bits)ceil(log2(sigma));
+//        for(int d=0; d<log2sigma; d++){
+//            for(int i=(1 << d); i<(1 << (d+1)); i++){
+//                for(int j=d; j<log2sigma; j++){ cout << "\t"; }
+//                if(i%2){ cout << "1:"; }
+//                else{ cout << "0:"; }
+//                for(int k=0; k<nodes[i].BC.tail_idx; k++){
+//                    cout << nodes[i].BC.access(k);
+//                }
+//            }
+//            cout << endl << endl;
+//        }
 
         //----- convert BitContainer to BitVector -----
         vector<Node>::iterator it_n=nodes.begin(), end_it_n=nodes.end();
@@ -480,30 +482,39 @@ public:
                 (*it_n).constructBitVector();
             }
         }
+        //printf("BitContainers are converted to BitVectors.\n");
     };
-};//}}}
+};
 
-int test_for_wavelettree(){//{{{
-    ifstream ifs("./data/series.dat", ifstream::in);
-    string str;
-    vector<int> S;
-    while( ifs >> str ){ S.push_back( atoi(str.c_str()) ); }
-    clock_t s_time, e_time;
-    double duration;
+int test_for_wavelettree(int length, int range){
+    for(int _i=2; _i<range; _i<<=1){
+        int i = _i + (rand() % _i);
+        for(int _j=1; _j<length; _j<<=1){
+            int j = _j + (rand() % _j);
 
-    s_time = clock();
-    // <construst an instance>
-    WaveletTree wt = WaveletTree(S);
-    // </construst an instance>
-    e_time = clock();
-    duration = (double)(e_time - s_time) / (double)CLOCKS_PER_SEC;
-    printf("construction: %f [s]\n", duration);
+            vector<int> S(j);
+            for(int k=0; k<j; k++){ S[k] = rand() % i; }
+            printf("\na test in the condition |T|=%d, |Σ|=%d starts;\n", j, i);
+
+            clock_t s_time, e_time;
+            double duration;
+
+            s_time = clock();
+            // <construst an instance>
+            WaveletTree wt = WaveletTree(S);
+            // </construst an instance>
+            e_time = clock();
+            duration = (double)(e_time - s_time) / (double)CLOCKS_PER_SEC;
+            printf("construction: OK \t %f [s]\n", duration);
+        }
+    }
 
     return 0;
-};//}}}
+};
 
 int main(){
-    test_for_bitvector(100000);
-    //test_for_wavelettree();
+    srand(time(0));
+    test_for_bitvector((UB_TEXT_SIZE >> 1));
+    test_for_wavelettree((UB_TEXT_SIZE >> 1), (UB_ALPHABET_SIZE >> 1));
 }
 /* vim:set foldmethod=marker commentstring=//%s : */
